@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+import java.io.File
 import javax.inject.Inject
 
 plugins {
@@ -126,13 +127,24 @@ abstract class UniffiBindgen : DefaultTask() {
 
     @TaskAction
     fun generate() {
+        val pathDirs = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
+        val uniffiBin = pathDirs.asSequence()
+            .flatMap { sequenceOf(File(it, "uniffi-bindgen.exe"), File(it, "uniffi-bindgen")) }
+            .firstOrNull { it.exists() }
         exec.exec {
             workingDir = workspace.get().asFile
-            commandLine(
-                "cargo", "run", "--quiet", "--locked", "-p", "nectarlink-ffi", "--features", "bindgen",
-                "--bin", "uniffi-bindgen", "--", "generate", "--library", library.get().asFile.path,
-                "--language", "kotlin", "--no-format", "--out-dir", outputDir.get().asFile.path,
-            )
+            if (uniffiBin != null) {
+                commandLine(
+                    uniffiBin.absolutePath, "generate", "--library", library.get().asFile.path,
+                    "--language", "kotlin", "--no-format", "--out-dir", outputDir.get().asFile.path,
+                )
+            } else {
+                commandLine(
+                    "cargo", "run", "--quiet", "--locked", "-p", "nectarlink-ffi", "--features", "bindgen",
+                    "--bin", "uniffi-bindgen", "--", "generate", "--library", library.get().asFile.path,
+                    "--language", "kotlin", "--no-format", "--out-dir", outputDir.get().asFile.path,
+                )
+            }
         }
     }
 }
