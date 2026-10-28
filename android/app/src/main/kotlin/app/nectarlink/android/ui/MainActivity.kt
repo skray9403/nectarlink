@@ -25,6 +25,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -1082,6 +1083,7 @@ private fun FloatingDockTabPill(
     reducedMotion: Boolean,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val scaleState = androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (selected) 1f else 0.95f,
         animationSpec = if (reducedMotion) {
@@ -1130,9 +1132,13 @@ private fun FloatingDockTabPill(
             .clickable(
                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                 indication = null,
-                onClick = onClick,
+                onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    onClick()
+                },
             )
-            .padding(horizontal = 18.dp, vertical = 9.dp),
+            .defaultMinSize(minHeight = 48.dp)
+            .padding(horizontal = 18.dp, vertical = 11.dp),
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

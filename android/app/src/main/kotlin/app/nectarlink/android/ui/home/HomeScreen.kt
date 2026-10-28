@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -257,6 +258,8 @@ fun HomeScreen(
     val reducedMotion = LocalReducedMotion.current
     val isGlass = LocalGlassTheme.current
     val anyModalOpen = browseFilesPcId != null || showClipboardHistory || showTimeline
+    val pcDevices = remember(state.devices) { state.devices.filter { !it.isAndroid } }
+    val androidPeers = remember(state.devices) { state.devices.filter { it.isAndroid } }
 
     LaunchedEffect(highlightTarget) {
         val target = highlightTarget ?: return@LaunchedEffect
@@ -600,7 +603,7 @@ fun HomeScreen(
                 }
             }
         }
-        if (state.devices.none { !it.isAndroid }) {
+        if (pcDevices.isEmpty()) {
             item(key = "no_paired_pc_card", contentType = "empty_pc") {
                 NoPairedPcCard(
                     onPairNew = onPairNew,
@@ -611,7 +614,7 @@ fun HomeScreen(
                 )
             }
         }
-        items(state.devices.filter { !it.isAndroid }, key = { it.id }, contentType = { "pc_card" }) { device ->
+        items(pcDevices, key = { it.id }, contentType = { "pc_card" }) { device ->
             Box(
                 modifier = Modifier.guideHighlightRing(
                     highlighted = pulsingTarget == GuideHighlightTarget.HOME_PC_CARD ||
@@ -639,7 +642,7 @@ fun HomeScreen(
             }
         }
         // Another phone or tablet paired with this one.
-        items(state.devices.filter { it.isAndroid }, key = { it.id }, contentType = { "peer_card" }) { device ->
+        items(androidPeers, key = { it.id }, contentType = { "peer_card" }) { device ->
             PeerCard(device = device, onRing = onRing, onSendFiles = onSendFiles)
         }
         if (state.sendQueue.isNotEmpty()) {
@@ -1312,15 +1315,17 @@ private fun PeerCard(
                 )
             }
         }
+        val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilledTonalButton(
                 contentPadding = CardButtonPadding,
                 enabled = device.online && device.has("pair.ring"),
                 onClick = {
                     ringing = !ringing
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                     onRing(device.id, ringing)
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp),
             ) {
                 Icon(imageVector = BellIcon, contentDescription = null, modifier = Modifier.size(15.dp))
                 Spacer(Modifier.width(6.dp))
@@ -1329,8 +1334,11 @@ private fun PeerCard(
             FilledTonalButton(
                 contentPadding = CardButtonPadding,
                 enabled = !device.online || device.has("pair.files"),
-                onClick = { pickFiles.launch(arrayOf("*/*")) },
-                modifier = Modifier.weight(1f),
+                onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    pickFiles.launch(arrayOf("*/*"))
+                },
+                modifier = Modifier.weight(1f).heightIn(min = 48.dp),
             ) {
                 Icon(imageVector = SendArrowIcon, contentDescription = null, modifier = Modifier.size(15.dp))
                 Spacer(Modifier.width(6.dp))
@@ -1340,8 +1348,11 @@ private fun PeerCard(
         FilledTonalButton(
             contentPadding = CardButtonPadding,
             enabled = !device.online || device.has("pair.clipboard"),
-            onClick = { context.startActivity(SendActivity.sendClipboardIntent(context, device.id)) },
-            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                context.startActivity(SendActivity.sendClipboardIntent(context, device.id))
+            },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
         ) {
             Icon(imageVector = ClipboardIcon, contentDescription = null, modifier = Modifier.size(15.dp))
             Spacer(Modifier.width(6.dp))
@@ -1394,6 +1405,7 @@ private fun PcCard(
                 .padding(22.dp),
         ) {
             val context = LocalContext.current
+            val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
             val ink = MaterialTheme.colorScheme.onPrimaryContainer
             val primaryBtn = ButtonDefaults.buttonColors(
                 disabledContainerColor = ink.copy(alpha = 0.08f),
@@ -1407,7 +1419,21 @@ private fun PcCard(
             )
             val outlined = ButtonDefaults.outlinedButtonColors(contentColor = ink, disabledContentColor = ink.copy(alpha = 0.38f))
             val outline = BorderStroke(1.dp, ink.copy(alpha = if (device.online) 0.45f else 0.15f))
-            val statusDotColor = if (device.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+            val wakingTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "waking_pulse")
+            val wakingAlpha by wakingTransition.animateFloat(
+                initialValue = 0.35f,
+                targetValue = 1f,
+                animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                    animation = androidx.compose.animation.core.tween<Float>(800, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                    repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
+                ),
+                label = "waking_alpha",
+            )
+            val statusDotColor = when {
+                device.online -> MaterialTheme.colorScheme.primary
+                device.wakeState == WakeState.Waking -> MaterialTheme.colorScheme.primary.copy(alpha = if (LocalReducedMotion.current) 1f else wakingAlpha)
+                else -> MaterialTheme.colorScheme.outline
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1435,9 +1461,12 @@ private fun PcCard(
                     Spacer(Modifier.width(8.dp))
                     FilledTonalButton(
                         colors = tonal,
-                        onClick = { onSetReconnect(device.id, true) },
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                        modifier = Modifier.heightIn(min = 32.dp),
+                        onClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            onSetReconnect(device.id, true)
+                        },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        modifier = Modifier.heightIn(min = 48.dp),
                     ) {
                         Text(
                             stringResource(R.string.action_reconnect),
@@ -1449,9 +1478,12 @@ private fun PcCard(
                     Spacer(Modifier.width(8.dp))
                     FilledTonalButton(
                         colors = tonal,
-                        onClick = { onWake(device.id) },
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                        modifier = Modifier.heightIn(min = 32.dp),
+                        onClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            onWake(device.id)
+                        },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        modifier = Modifier.heightIn(min = 48.dp),
                     ) {
                         Text(
                             stringResource(R.string.action_wake_pc),
@@ -1464,10 +1496,13 @@ private fun PcCard(
             // Stays paired, and stays disconnected until Reconnect (GitHub #48).
             if (device.reconnect && device.wakeState != WakeState.Waking) {
                 TextButton(
-                    onClick = { onSetReconnect(device.id, false) },
+                    onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        onSetReconnect(device.id, false)
+                    },
                     colors = ButtonDefaults.textButtonColors(contentColor = ink),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 0.dp, vertical = 4.dp),
-                    modifier = Modifier.heightIn(min = 32.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                    modifier = Modifier.heightIn(min = 48.dp),
                 ) {
                     Text(
                         stringResource(if (device.online) R.string.action_disconnect else R.string.action_stop_reconnecting),
@@ -1519,8 +1554,11 @@ private fun PcCard(
                         contentPadding = CardButtonPadding,
                         enabled = device.online,
                         colors = primaryBtn,
-                        onClick = { onRemote(device.id) },
-                        modifier = Modifier.weight(1f).heightIn(min = 46.dp),
+                        onClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            onRemote(device.id)
+                        },
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     ) {
                         Icon(
                             imageVector = RemotePcIcon,
@@ -1534,8 +1572,11 @@ private fun PcCard(
                         contentPadding = CardButtonPadding,
                         enabled = device.online,
                         colors = tonal,
-                        onClick = { onDeck(device.id) },
-                        modifier = Modifier.weight(1f).heightIn(min = 46.dp),
+                        onClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            onDeck(device.id)
+                        },
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     ) {
                         Icon(
                             imageVector = DeckGridIcon,
@@ -1554,8 +1595,11 @@ private fun PcCard(
                         contentPadding = CardButtonPadding,
                         enabled = device.online,
                         colors = tonal,
-                        onClick = { onDesk(device.id) },
-                        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+                        onClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            onDesk(device.id)
+                        },
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     ) {
                         Icon(
                             imageVector = DeskClockIcon,
@@ -1569,8 +1613,11 @@ private fun PcCard(
                         contentPadding = CardButtonPadding,
                         enabled = device.online,
                         colors = tonal,
-                        onClick = { onWebcam(device.id) },
-                        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+                        onClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            onWebcam(device.id)
+                        },
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     ) {
                         Icon(
                             imageVector = CameraLensIcon,
@@ -1608,8 +1655,11 @@ private fun PcCard(
                             contentPadding = CardButtonPadding,
                             enabled = if (device.online) device.has("files.send") else true,
                             colors = tonal,
-                            onClick = { pickFiles.launch(arrayOf("*/*")) },
-                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                pickFiles.launch(arrayOf("*/*"))
+                            },
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         ) {
                             Icon(
                                 imageVector = SendArrowIcon,
@@ -1623,8 +1673,11 @@ private fun PcCard(
                             contentPadding = CardButtonPadding,
                             enabled = if (device.online) device.has("files.send") else true,
                             colors = tonal,
-                            onClick = { pickFolder.launch(null) },
-                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                pickFolder.launch(null)
+                            },
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         ) {
                             Icon(
                                 imageVector = FolderIcon,
@@ -1644,8 +1697,11 @@ private fun PcCard(
                             // Offline, the clip waits in the send queue.
                             enabled = if (device.online) device.usable("clipboard.auto_phone_to_pc") else true,
                             colors = tonal,
-                            onClick = { context.startActivity(SendActivity.sendClipboardIntent(context, device.id)) },
-                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                context.startActivity(SendActivity.sendClipboardIntent(context, device.id))
+                            },
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         ) {
                             Icon(
                                 imageVector = ClipboardIcon,
@@ -1659,8 +1715,11 @@ private fun PcCard(
                             contentPadding = CardButtonPadding,
                             enabled = device.online,
                             colors = tonal,
-                            onClick = { onBrowsePcFiles(device.id) },
-                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                onBrowsePcFiles(device.id)
+                            },
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         ) {
                             Icon(
                                 imageVector = PcFolderIcon,
@@ -1703,8 +1762,11 @@ private fun PcCard(
                         contentPadding = CardButtonPadding,
                         enabled = device.online,
                         colors = tonal,
-                        onClick = { onRecord(device.id) },
-                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            onRecord(device.id)
+                        },
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     ) {
                         Icon(
                             imageVector = MicIcon,
@@ -1720,9 +1782,10 @@ private fun PcCard(
                         colors = tonal,
                         onClick = {
                             ringing = !ringing
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                             onRing(device.id, ringing)
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     ) {
                         Icon(
                             imageVector = BellIcon,
@@ -1743,8 +1806,11 @@ private fun PcCard(
                             enabled = device.online,
                             colors = outlined,
                             border = outline,
-                            onClick = { onPower(device.id, false) },
-                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                onPower(device.id, false)
+                            },
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         ) {
                             ButtonLabel(stringResource(R.string.action_lock_pc))
                         }
@@ -1753,8 +1819,11 @@ private fun PcCard(
                             enabled = device.online,
                             colors = outlined,
                             border = outline,
-                            onClick = { onPower(device.id, true) },
-                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                onPower(device.id, true)
+                            },
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         ) {
                             ButtonLabel(stringResource(R.string.action_sleep_pc))
                         }
@@ -3797,7 +3866,7 @@ private val CloseQueueIcon: ImageVector by lazy {
 
 // The PC card's buttons sit two to a row, so the default 24 dp side padding
 // leaves too little room for labels like "Browse PC files" on narrow phones.
-private val CardButtonPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+private val CardButtonPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 10.dp)
 
 // One line that shrinks a little on narrow phones or with large font sizes
 // before it would ever cut a word off.

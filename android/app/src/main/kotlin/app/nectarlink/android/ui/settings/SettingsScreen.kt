@@ -212,6 +212,7 @@ fun SettingsScreen(
                         Text(stringResource(R.string.guide_title))
                     }
                 }
+                val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -222,7 +223,10 @@ fun SettingsScreen(
                         val selected = activeCategory == id
                         FilterChip(
                             selected = selected,
-                            onClick = { activeCategory = id },
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                activeCategory = id
+                            },
                             label = { Text(stringResource(label)) },
                             // Solid like the cards: the row sits right on the
                             // background (Hive's comb showed through).
@@ -1582,11 +1586,15 @@ private const val MORE_LANGUAGES = "more"
 
 @Composable
 private fun Choice(options: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
         options.forEachIndexed { index, (value, label) ->
             SegmentedButton(
                 selected = value == selected,
-                onClick = { onSelect(value) },
+                onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    onSelect(value)
+                },
                 shape = SegmentedButtonDefaults.itemShape(index, options.size),
             ) { Text(label) }
         }

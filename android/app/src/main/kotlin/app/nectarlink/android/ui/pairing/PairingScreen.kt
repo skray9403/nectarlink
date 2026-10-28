@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -156,21 +157,41 @@ fun PairingScreen(
             }
         }
 
+        val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
         if (pairing == PairingState.Idle) {
             if (!showing) {
-                FilledTonalButton(onClick = { nearby = !nearby }) {
+                FilledTonalButton(
+                    onClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                        nearby = !nearby
+                    },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                ) {
                     Text(stringResource(if (nearby) R.string.action_scan_instead else R.string.action_pair_nearby))
                 }
             }
-            TextButton(onClick = {
-                showing = !showing
-                nearby = false
-            }) {
+            TextButton(
+                onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    showing = !showing
+                    nearby = false
+                },
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
                 Text(stringResource(if (showing) R.string.action_scan_instead else R.string.action_show_code))
             }
         }
         if (cancellable && pairing !is PairingState.Paired) {
-            TextButton(onClick = { actions.reset(); onDone() }) { Text(stringResource(R.string.action_cancel)) }
+            TextButton(
+                onClick = {
+                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                    actions.reset()
+                    onDone()
+                },
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text(stringResource(R.string.action_cancel))
+            }
         }
     }
 }
