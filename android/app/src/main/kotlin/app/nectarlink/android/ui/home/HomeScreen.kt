@@ -88,6 +88,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -3872,16 +3873,21 @@ private val CloseQueueIcon: ImageVector by lazy {
 // leaves too little room for labels like "Browse PC files" on narrow phones.
 private val CardButtonPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 8.dp)
 
-// One line that shrinks a little on narrow phones or with large font sizes
-// before it would ever cut a word off.
+// Keep the compact one-line grid at normal text sizes, but let action
+// labels reflow instead of shrinking when the user has enlarged system text.
 @Composable
 private fun ButtonLabel(text: String) {
     val size = LocalTextStyle.current.fontSize.takeIf { it.isSpecified } ?: 14.sp
+    val allowTwoLines = LocalConfiguration.current.fontScale >= 1.2f
     Text(
         text,
-        maxLines = 1,
+        maxLines = if (allowTwoLines) 2 else 1,
         overflow = TextOverflow.Ellipsis,
-        autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = size, stepSize = 0.5.sp),
+        autoSize = if (allowTwoLines) {
+            null
+        } else {
+            TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = size, stepSize = 0.5.sp)
+        },
     )
 }
 
