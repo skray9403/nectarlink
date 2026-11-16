@@ -60,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.nectarlink.android.R
 import app.nectarlink.android.core.Device
 import app.nectarlink.android.ui.detached
+import app.nectarlink.android.ui.components.DeviceScreenHeader
 import app.nectarlink.android.webcam.WebcamService
 
 @Composable
@@ -145,30 +146,12 @@ fun WebcamScreen(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Header: Back icon button, PC name, online dot
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_back),
-                        contentDescription = stringResource(R.string.action_back),
-                    )
-                }
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    device.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                Surface(
-                    shape = CircleShape,
-                    color = if (device.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.size(10.dp),
-                ) {}
-            }
+            DeviceScreenHeader(
+                deviceName = device.name,
+                online = device.online,
+                onBack = onBack,
+            )
         }
 
         // Camera permission prompt card when CAMERA permission is not granted yet
