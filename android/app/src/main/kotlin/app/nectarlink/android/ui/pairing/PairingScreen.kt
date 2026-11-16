@@ -130,42 +130,44 @@ fun PairingScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 AnimatedContent(
-            targetState = Triple(pairing, nearby, showing),
-            transitionSpec = {
-                if (reducedMotion) {
-                    EnterTransition.None togetherWith ExitTransition.None
-                } else {
-                    fadeIn() togetherWith fadeOut()
-                }
-            },
+                    targetState = Triple(pairing, nearby, showing),
+                    transitionSpec = {
+                        if (reducedMotion) {
+                            EnterTransition.None togetherWith ExitTransition.None
+                        } else {
+                            fadeIn() togetherWith fadeOut()
+                        }
+                    },
                     modifier = Modifier.fillMaxSize(),
                     label = "pairing",
                 ) { (current, showNearby, showCode) ->
                     when (current) {
-                PairingState.Idle -> when {
-                    showCode -> ShowCode(actions)
-                    showNearby -> NearbyList(state.discovered, actions::pairNearby)
-                    else -> Scan(actions::join)
-                }
-                PairingState.Joining -> Working(stringResource(R.string.pair_joining))
-                is PairingState.Connecting ->
-                    Working(stringResource(R.string.pair_connecting, state.nameOf(current.peer) ?: ""))
-                is PairingState.Comparing -> Compare(state.nameOf(current.peer), current.code, actions::confirm)
-                is PairingState.Confirmed -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CodeDigits(current.code)
-                    Spacer(Modifier.height(24.dp))
-                    Working(stringResource(R.string.pair_waiting, state.nameOf(current.peer) ?: ""))
-                }
-                is PairingState.Paired -> Outcome(true, stringResource(R.string.pair_done, current.name))
-                is PairingState.Failed -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Outcome(false, failureText(current.failure))
-                    Spacer(Modifier.height(16.dp))
-                    Button(onClick = actions::reset) { Text(stringResource(R.string.action_try_again)) }
+                        PairingState.Idle -> when {
+                            showCode -> ShowCode(actions)
+                            showNearby -> NearbyList(state.discovered, actions::pairNearby)
+                            else -> Scan(actions::join)
+                        }
+                        PairingState.Joining -> Working(stringResource(R.string.pair_joining))
+                        is PairingState.Connecting ->
+                            Working(stringResource(R.string.pair_connecting, state.nameOf(current.peer) ?: ""))
+                        is PairingState.Comparing ->
+                            Compare(state.nameOf(current.peer), current.code, actions::confirm)
+                        is PairingState.Confirmed -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CodeDigits(current.code)
+                            Spacer(Modifier.height(24.dp))
+                            Working(stringResource(R.string.pair_waiting, state.nameOf(current.peer) ?: ""))
+                        }
+                        is PairingState.Paired ->
+                            Outcome(true, stringResource(R.string.pair_done, current.name))
+                        is PairingState.Failed -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Outcome(false, failureText(current.failure))
+                            Spacer(Modifier.height(16.dp))
+                            Button(onClick = actions::reset) { Text(stringResource(R.string.action_try_again)) }
+                        }
                     }
                 }
             }
         }
-
         if (pairing == PairingState.Idle) {
             if (!showing) {
                 FilledTonalButton(onClick = { nearby = !nearby }) {
