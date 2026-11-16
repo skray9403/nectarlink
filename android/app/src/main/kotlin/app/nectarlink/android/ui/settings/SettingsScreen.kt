@@ -142,6 +142,12 @@ fun SettingsScreen(
     var activeCategory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("all") }
     var pulsingSectionKey by remember { mutableStateOf<String?>(null) }
     val isGlass = LocalGlassTheme.current
+    val sectionCornerRadius = when (appearance.theme) {
+        "graphite" -> 6.dp
+        "hive" -> 24.dp
+        "glass" -> 30.dp
+        else -> 28.dp
+    }
     val anyDialogOpen = confirmUnpair != null || confirmClearEverything
 
     val categories = remember {
@@ -1485,7 +1491,7 @@ private fun Section(
             modifier = Modifier
                 .fillMaxWidth()
                 .liquidGlassCard(
-                    cornerRadius = if (isGlass) 26.dp else 20.dp,
+                    cornerRadius = sectionCornerRadius,
                     isGlass = isGlass,
                     baseColor = if (highlighted) scheme.secondaryContainer else scheme.surfaceContainer,
                     tintColor = scheme.primary,
