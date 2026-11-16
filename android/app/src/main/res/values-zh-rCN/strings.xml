@@ -857,7 +857,7 @@
     <string name="guide_req_dnd">勿扰模式访问权限</string>
     <string name="guide_req_write_settings">修改系统设置</string>
     <string name="guide_req_elevated">高级权限</string>
-    <string name="guide_req_assist_or_elevated">辅助功能或高级权限</string>
+    <string name="guide_req_assist_or_elevated">无障碍服务</string>
     <string name="guide_fix_grant">授予</string>
     <string name="guide_fix_allow">允许</string>
     <string name="guide_fix_enable">启用</string>
