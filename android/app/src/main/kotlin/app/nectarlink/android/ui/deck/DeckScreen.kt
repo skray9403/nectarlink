@@ -89,6 +89,7 @@ import app.nectarlink.android.core.Core
 import app.nectarlink.android.core.Device
 import app.nectarlink.android.ui.home.PcAudioOutputsDialog
 import app.nectarlink.android.ui.theme.LocalReducedMotion
+import app.nectarlink.android.ui.components.DeviceScreenHeader
 import app.nectarlink.core.DeckLayout
 import app.nectarlink.core.DeckPage
 import app.nectarlink.core.DeckState
@@ -179,53 +180,24 @@ fun DeckScreen(
             ),
         verticalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 12.dp),
     ) {
-        // Header row: Back, PC name + status dot, Full-screen toggle
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_back),
-                    contentDescription = stringResource(R.string.action_back),
-                )
-            }
-            Spacer(Modifier.width(4.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+        DeviceScreenHeader(
+            deviceName = device.name,
+            online = device.online,
+            onBack = onBack,
+            compact = isLandscape,
+            subtitle = if (!fullScreen && !isLandscape) stringResource(R.string.deck_hint, device.name) else null,
+            trailingContent = {
+                OutlinedButton(
+                    onClick = { fullScreen = !fullScreen },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                ) {
                     Text(
-                        device.name,
-                        style = if (isLandscape) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Surface(
-                        shape = CircleShape,
-                        color = if (device.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(8.dp),
-                    ) {}
-                }
-                if (!fullScreen && !isLandscape) {
-                    Text(
-                        stringResource(R.string.deck_hint, device.name),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+                        stringResource(if (fullScreen) R.string.deck_exit_fullscreen else R.string.deck_fullscreen),
+                        style = MaterialTheme.typography.labelMedium,
                     )
                 }
-            }
-            OutlinedButton(
-                onClick = { fullScreen = !fullScreen },
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-            ) {
-                Text(
-                    stringResource(if (fullScreen) R.string.deck_exit_fullscreen else R.string.deck_fullscreen),
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
-        }
+            },
+        )
 
         // Compact PC audio header bar (volume, mute, and active output device)
         if (!fullScreen && device.online) {
