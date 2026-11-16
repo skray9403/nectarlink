@@ -58,7 +58,6 @@ enum class GuideFixAction(
     GRANT_PHOTOS(R.string.guide_fix_grant),
     GRANT_STORAGE(R.string.guide_fix_grant),
     OPEN_ACCESSIBILITY(R.string.guide_fix_enable),
-    ENABLE_ELEVATED(R.string.guide_fix_enable),
     ENABLE_DND(R.string.guide_fix_grant),
     ENABLE_WRITE_SETTINGS(R.string.guide_fix_grant),
     PAIR_PC(R.string.guide_fix_pair),
@@ -891,43 +890,6 @@ object FeaturesGuideCatalog {
             },
             evaluateFixAction = { state ->
                 if (!state.inputAccess && !state.elevated) GuideFixAction.OPEN_ACCESSIBILITY else null
-            },
-        ),
-
-        // 22. Elevated
-        FeatureGuideEntry(
-            id = "elevated_mode",
-            area = FeatureArea.InputControl,
-            titleRes = R.string.guide_elevated_title,
-            summaryRes = R.string.guide_elevated_summary,
-            keywords = listOf("elevated", "wireless debugging", "adb", "shizuku", "power level", "background clipboard"),
-            whereTextRes = R.string.guide_elevated_where,
-            showMeTarget = GuideHighlightTarget.SETTINGS_CONTROL,
-            needsSummaryRes = R.string.guide_elevated_needs,
-            whatYouNeedResIds = listOf(
-                R.string.guide_elevated_need_1,
-            ),
-            stepByStepPhoneResIds = listOf(
-                R.string.guide_elevated_phone_1,
-                R.string.guide_elevated_phone_2,
-            ),
-            stepByStepPcResIds = listOf(
-                R.string.guide_elevated_pc_1,
-            ),
-            optionsExplainedResIds = listOf(
-                R.string.guide_elevated_opt_1,
-            ),
-            dataAndPrivacyRes = R.string.guide_elevated_privacy,
-            limitsRes = R.string.guide_elevated_limits,
-            evaluateBadge = { state ->
-                if (!state.elevated) {
-                    FeatureLiveBadge.NeedsPowerLevel(R.string.guide_req_elevated)
-                } else {
-                    FeatureLiveBadge.Available
-                }
-            },
-            evaluateFixAction = { state ->
-                if (!state.elevated) GuideFixAction.ENABLE_ELEVATED else null
             },
         ),
 
