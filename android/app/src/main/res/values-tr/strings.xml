@@ -936,7 +936,7 @@
     <string name="guide_req_dnd">Rahatsız Etmeyin erişimi</string>
     <string name="guide_req_write_settings">Sistem ayarlarını değiştirme</string>
     <string name="guide_req_elevated">Yükseltilmiş</string>
-    <string name="guide_req_assist_or_elevated">Yardımcı veya Yükseltilmiş</string>
+    <string name="guide_req_assist_or_elevated">Erişilebilirlik hizmeti</string>
 
     <string name="guide_fix_grant">İzin ver</string>
     <string name="guide_fix_allow">İzin ver</string>
