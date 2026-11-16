@@ -122,6 +122,7 @@ import app.nectarlink.android.core.Core
 import app.nectarlink.android.core.Device
 import app.nectarlink.android.core.WakeState
 import app.nectarlink.android.ui.theme.LocalReducedMotion
+import app.nectarlink.android.ui.components.DeviceScreenHeader
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlinx.coroutines.delay
@@ -214,29 +215,11 @@ fun RemoteScreen(
         verticalArrangement = Arrangement.spacedBy(if (isFullScreen) 0.dp else 12.dp),
     ) {
         if (!isFullScreen) {
-            // Header: Back, PC name, online dot
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_back),
-                        contentDescription = stringResource(R.string.action_back),
-                    )
-                }
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    device.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                Surface(
-                    shape = CircleShape,
-                    color = if (device.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.size(10.dp),
-                ) {}
-            }
+            DeviceScreenHeader(
+                deviceName = device.name,
+                online = device.online,
+                onBack = onBack,
+            )
 
             // Mode switcher: Touchpad | Air mouse | Presentation | Screen. A label shrinks
             // to fit (large fonts, longer languages) before it's cut short.
