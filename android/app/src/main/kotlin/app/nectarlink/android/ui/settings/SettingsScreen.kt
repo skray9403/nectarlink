@@ -75,10 +75,6 @@ import app.nectarlink.android.calls.PhoneCalls
 import app.nectarlink.android.companion.PcCompanion
 import app.nectarlink.android.contacts.PhoneContacts
 import app.nectarlink.android.clipboard.PhoneClipboard
-import app.nectarlink.android.elevated.Elevated
-import app.nectarlink.android.elevated.PairingNotification
-import app.nectarlink.android.elevated.ElevatedMethod
-import app.nectarlink.android.elevated.ShizukuElevated
 import app.nectarlink.android.mirror.InputService
 import app.nectarlink.android.photos.RecentPhotos
 import app.nectarlink.android.sms.PhoneSms
@@ -145,7 +141,6 @@ fun SettingsScreen(
     var pickLanguage by remember { mutableStateOf(false) }
     var activeCategory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("all") }
     var pulsingSectionKey by remember { mutableStateOf<String?>(null) }
-    var jumpToControl by remember { mutableStateOf(0) }
     val isGlass = LocalGlassTheme.current
     val anyDialogOpen = confirmUnpair != null || confirmClearEverything
 
@@ -169,16 +164,6 @@ fun SettingsScreen(
     val listState = androidx.compose.foundation.lazy.rememberLazyListState(
         cacheWindow = androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow(aheadFraction = 1f, behindFraction = 1f),
     )
-
-    androidx.compose.runtime.LaunchedEffect(jumpToControl) {
-        if (jumpToControl == 0) return@LaunchedEffect
-        activeCategory = "permissions"
-        pulsingSectionKey = "control"
-        delay(60)
-        runCatching { listState.animateScrollToItem(2) }
-        delay(2200)
-        if (pulsingSectionKey == "control") pulsingSectionKey = null
-    }
 
     androidx.compose.runtime.LaunchedEffect(highlightTarget) {
         val target = highlightTarget ?: return@LaunchedEffect
@@ -628,8 +613,6 @@ fun SettingsScreen(
                 ) {
                     ControlAccess(state.inputAccess)
                     SettingRowDivider()
-                    ElevatedAccess()
-                    SettingRowDivider()
                     BankingPauseAccess()
                     SettingRowDivider()
                     DndAccess(state.dndAccess)
@@ -733,31 +716,6 @@ fun SettingsScreen(
                     highlighted = pulsingSectionKey == "clipboard",
                 ) {
                     val context = LocalContext.current
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(stringResource(R.string.settings_background_clipboard_title), style = MaterialTheme.typography.titleSmall)
-                            Text(
-                                if (state.elevated) {
-                                    stringResource(R.string.settings_wireless_debugging_active)
-                                } else {
-                                    stringResource(R.string.settings_wireless_debugging_hint)
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        // Elevated's own section knows every way to start it.
-                        if (state.elevated) {
-                            OutlinedButton(onClick = { jumpToControl++ }) {
-                                Text(stringResource(R.string.action_manage))
-                            }
-                        } else {
-                            Button(onClick = { jumpToControl++ }) {
-                                Text(stringResource(R.string.elevated_set_up))
-                            }
-                        }
-                    }
-                    SettingRowDivider()
                     var syncPasswords by remember { mutableStateOf(PhoneClipboard.syncPasswords(context)) }
                     val syncPasswordsTitle = stringResource(R.string.settings_clipboard_passwords)
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -1151,23 +1109,6 @@ private fun openAppInfoSettings(context: Context) {
     }
 }
 
-/** Shizuku's app, where it's started and where NectarLink is allowed. */
-private fun openShizuku(context: Context) {
-    context.packageManager.getLaunchIntentForPackage(ShizukuElevated.PACKAGE)
-        ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        ?.let { runCatching { context.startActivity(it) } }
-}
-
-private fun openDeveloperOptionsSettings(context: Context) {
-    val devIntent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    if (runCatching { context.startActivity(devIntent) }.isFailure) {
-        runCatching {
-            context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        }
-    }
-}
-
 /**
  * Notification access, which mirroring needs. Android shows the switch in
  * its own settings; sideloaded apps on Android 13+ must first be allowed
@@ -1379,163 +1320,6 @@ private fun ControlAccess(on: Boolean) {
             )
             OutlinedButton(onClick = { openAppInfoSettings(context) }) { Text(stringResource(R.string.action_app_info)) }
         }
-    }
-}
-
-/** Elevated through the phone's own wireless debugging: real touch and keys. */
-@Composable
-private fun ElevatedAccess() {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val state by Elevated.state.collectAsStateWithLifecycle()
-    var steps by remember { mutableStateOf(false) }
-    val shizukuInstalled = remember { ShizukuElevated.installed(context) }
-    val failure = (state as? Elevated.State.Failed)?.reason
-    val shizukuFailure = failure == Elevated.Reason.ShizukuNotRunning ||
-        failure == Elevated.Reason.ShizukuDenied || failure == Elevated.Reason.ShizukuRoot
-    // Through Shizuku, the way back is in Shizuku's app, not Developer options.
-    val viaShizuku = Elevated.usesShizuku() || shizukuFailure
-    val methods = remember { ElevatedMethod.available(shizukuInstalled, Elevated.isRootAvailable()) }
-    var method by remember {
-        mutableStateOf(if (Elevated.usesShizuku()) ElevatedMethod.Shizuku else ElevatedMethod.WirelessDebugging)
-    }
-    fun setUp() {
-        when (method) {
-            ElevatedMethod.WirelessDebugging -> {
-                Elevated.useWirelessDebugging()
-                steps = true
-            }
-            ElevatedMethod.Shizuku -> scope.launch {
-                if (!Elevated.setUpWithShizuku() && !ShizukuElevated.running()) openShizuku(context)
-            }
-            ElevatedMethod.Root -> scope.launch { Elevated.setUpWithRoot() }
-        }
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.weight(1f).padding(end = 12.dp)) {
-                Text(stringResource(R.string.elevated_title), style = MaterialTheme.typography.titleSmall)
-                Text(
-                    stringResource(
-                        when (state) {
-                            Elevated.State.NotSetUp -> R.string.elevated_not_set_up
-                            Elevated.State.Waiting ->
-                                if (Elevated.usesShizuku()) R.string.elevated_shizuku_waiting else R.string.elevated_waiting
-                            Elevated.State.Starting -> R.string.elevated_starting
-                            Elevated.State.Running -> when {
-                                Elevated.rootActive -> R.string.elevated_running_root
-                                Elevated.shizukuActive -> R.string.elevated_running_shizuku
-                                else -> R.string.elevated_running
-                            }
-                            is Elevated.State.Failed -> when ((state as Elevated.State.Failed).reason) {
-                                Elevated.Reason.NotPaired -> R.string.elevated_not_paired
-                                Elevated.Reason.RootDenied -> R.string.elevated_root_failed
-                                Elevated.Reason.ShizukuNotRunning -> R.string.elevated_shizuku_not_running
-                                Elevated.Reason.ShizukuDenied -> R.string.elevated_shizuku_denied
-                                Elevated.Reason.ShizukuRoot -> R.string.elevated_shizuku_root
-                                else -> R.string.elevated_failed
-                            }
-                        },
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            when (state) {
-                Elevated.State.NotSetUp, is Elevated.State.Failed -> Button(onClick = { setUp() }) {
-                    Text(stringResource(R.string.elevated_set_up))
-                }
-                Elevated.State.Waiting -> Button(onClick = {
-                    // Picked another way while waiting for this one.
-                    val waitingFor =
-                        if (Elevated.usesShizuku()) ElevatedMethod.Shizuku else ElevatedMethod.WirelessDebugging
-                    if (method != waitingFor) {
-                        setUp()
-                        return@Button
-                    }
-                    scope.launch {
-                        if (Elevated.usesShizuku()) {
-                            if (!Elevated.start() && !ShizukuElevated.running()) openShizuku(context)
-                            return@launch
-                        }
-                        PairingNotification.show(context)
-                        if (!Elevated.start()) {
-                            openDeveloperOptionsSettings(context)
-                        }
-                    }
-                }) {
-                    Text(stringResource(R.string.elevated_try_again))
-                }
-                Elevated.State.Running -> OutlinedButton(onClick = { scope.launch { Elevated.forget() } }) {
-                    Text(stringResource(R.string.elevated_turn_off))
-                }
-                Elevated.State.Starting -> {}
-            }
-        }
-        if (state == Elevated.State.Waiting || state is Elevated.State.Failed) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (viaShizuku && shizukuInstalled) {
-                    OutlinedButton(onClick = { openShizuku(context) }) {
-                        Text(stringResource(R.string.elevated_open_shizuku))
-                    }
-                } else {
-                    OutlinedButton(onClick = {
-                        PairingNotification.show(context)
-                        openDeveloperOptionsSettings(context)
-                    }) {
-                        Text(stringResource(R.string.elevated_open_developer))
-                    }
-                }
-            }
-        }
-        // Shizuku and root only show when the phone has them, and nothing asks for
-        // either until the user picks it and taps Set up. To change the way it
-        // started, turn it off first.
-        if (methods.size > 1 && state != Elevated.State.Running && state != Elevated.State.Starting) {
-            Text(stringResource(R.string.elevated_start_with), style = MaterialTheme.typography.labelMedium)
-            Choice(
-                options = methods.map { option ->
-                    option.name to stringResource(
-                        when (option) {
-                            ElevatedMethod.WirelessDebugging -> R.string.elevated_method_wireless
-                            ElevatedMethod.Shizuku -> R.string.elevated_method_shizuku
-                            ElevatedMethod.Root -> R.string.elevated_method_root
-                        },
-                    )
-                },
-                selected = method.name,
-                onSelect = { picked -> method = ElevatedMethod.valueOf(picked) },
-            )
-            val hint = when (method) {
-                ElevatedMethod.WirelessDebugging -> null
-                ElevatedMethod.Shizuku -> R.string.elevated_shizuku_hint
-                ElevatedMethod.Root -> R.string.elevated_root_hint
-            }
-            hint?.let {
-                Text(
-                    stringResource(it),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-    if (steps) {
-        AlertDialog(
-            onDismissRequest = { steps = false },
-            title = { Text(stringResource(R.string.elevated_steps_title)) },
-            text = { Text(stringResource(R.string.elevated_steps)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    steps = false
-                    PairingNotification.show(context)
-                    openDeveloperOptionsSettings(context)
-                }) { Text(stringResource(R.string.elevated_open_developer)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { steps = false }) { Text(stringResource(R.string.action_cancel)) }
-            },
-        )
     }
 }
 
