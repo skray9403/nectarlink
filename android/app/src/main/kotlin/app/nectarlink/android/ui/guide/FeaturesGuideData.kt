@@ -58,7 +58,6 @@ enum class GuideFixAction(
     GRANT_PHOTOS(R.string.guide_fix_grant),
     GRANT_STORAGE(R.string.guide_fix_grant),
     OPEN_ACCESSIBILITY(R.string.guide_fix_enable),
-    ENABLE_ELEVATED(R.string.guide_fix_enable),
     ENABLE_DND(R.string.guide_fix_grant),
     ENABLE_WRITE_SETTINGS(R.string.guide_fix_grant),
     PAIR_PC(R.string.guide_fix_pair),
@@ -79,12 +78,6 @@ sealed interface FeatureLiveBadge {
         @StringRes val permissionNameRes: Int,
     ) : FeatureLiveBadge {
         override val labelRes: Int = R.string.guide_badge_needs_permission
-    }
-
-    data class NeedsPowerLevel(
-        @StringRes val levelNameRes: Int,
-    ) : FeatureLiveBadge {
-        override val labelRes: Int = R.string.guide_badge_needs_power
     }
 
     data object ConnectPcToCheck : FeatureLiveBadge {
@@ -679,45 +672,6 @@ object FeaturesGuideCatalog {
             evaluateFixAction = { null },
         ),
 
-        // 16. App streams
-        FeatureGuideEntry(
-            id = "phone_app_windows",
-            area = FeatureArea.MirroringCamera,
-            titleRes = R.string.guide_apps_title,
-            summaryRes = R.string.guide_apps_summary,
-            keywords = listOf("app streams", "app window", "virtual display", "elevated", "wireless debugging", "shizuku", "apps"),
-            whereTextRes = R.string.guide_apps_where,
-            showMeTarget = GuideHighlightTarget.SETTINGS_CONTROL,
-            needsSummaryRes = R.string.guide_apps_needs,
-            whatYouNeedResIds = listOf(
-                R.string.guide_apps_need_1,
-                R.string.guide_apps_need_2,
-            ),
-            stepByStepPhoneResIds = listOf(
-                R.string.guide_apps_phone_1,
-            ),
-            stepByStepPcResIds = listOf(
-                R.string.guide_apps_pc_1,
-            ),
-            optionsExplainedResIds = listOf(
-                R.string.guide_apps_opt_1,
-            ),
-            dataAndPrivacyRes = R.string.guide_apps_privacy,
-            limitsRes = R.string.guide_apps_limits,
-            evaluateBadge = { state ->
-                if (!state.elevated) {
-                    FeatureLiveBadge.NeedsPowerLevel(R.string.guide_req_elevated)
-                } else if (state.devices.none { it.online }) {
-                    FeatureLiveBadge.ConnectPcToCheck
-                } else {
-                    FeatureLiveBadge.Available
-                }
-            },
-            evaluateFixAction = { state ->
-                if (!state.elevated) GuideFixAction.ENABLE_ELEVATED else null
-            },
-        ),
-
         // 17. Phone as webcam
         FeatureGuideEntry(
             id = "phone_as_pc_webcam",
@@ -882,7 +836,7 @@ object FeaturesGuideCatalog {
             limitsRes = R.string.guide_assist_limits,
             evaluateBadge = { state ->
                 if (!state.inputAccess && !state.elevated) {
-                    FeatureLiveBadge.NeedsPowerLevel(R.string.guide_req_assist_or_elevated)
+                    FeatureLiveBadge.NeedsPermission(R.string.guide_req_assist_or_elevated)
                 } else if (state.devices.none { it.online }) {
                     FeatureLiveBadge.ConnectPcToCheck
                 } else {
@@ -891,43 +845,6 @@ object FeaturesGuideCatalog {
             },
             evaluateFixAction = { state ->
                 if (!state.inputAccess && !state.elevated) GuideFixAction.OPEN_ACCESSIBILITY else null
-            },
-        ),
-
-        // 22. Elevated
-        FeatureGuideEntry(
-            id = "elevated_mode",
-            area = FeatureArea.InputControl,
-            titleRes = R.string.guide_elevated_title,
-            summaryRes = R.string.guide_elevated_summary,
-            keywords = listOf("elevated", "wireless debugging", "adb", "shizuku", "power level", "background clipboard"),
-            whereTextRes = R.string.guide_elevated_where,
-            showMeTarget = GuideHighlightTarget.SETTINGS_CONTROL,
-            needsSummaryRes = R.string.guide_elevated_needs,
-            whatYouNeedResIds = listOf(
-                R.string.guide_elevated_need_1,
-            ),
-            stepByStepPhoneResIds = listOf(
-                R.string.guide_elevated_phone_1,
-                R.string.guide_elevated_phone_2,
-            ),
-            stepByStepPcResIds = listOf(
-                R.string.guide_elevated_pc_1,
-            ),
-            optionsExplainedResIds = listOf(
-                R.string.guide_elevated_opt_1,
-            ),
-            dataAndPrivacyRes = R.string.guide_elevated_privacy,
-            limitsRes = R.string.guide_elevated_limits,
-            evaluateBadge = { state ->
-                if (!state.elevated) {
-                    FeatureLiveBadge.NeedsPowerLevel(R.string.guide_req_elevated)
-                } else {
-                    FeatureLiveBadge.Available
-                }
-            },
-            evaluateFixAction = { state ->
-                if (!state.elevated) GuideFixAction.ENABLE_ELEVATED else null
             },
         ),
 

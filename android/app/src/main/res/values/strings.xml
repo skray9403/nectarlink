@@ -939,7 +939,7 @@
     <string name="guide_req_dnd">Do Not Disturb access</string>
     <string name="guide_req_write_settings">Modify system settings</string>
     <string name="guide_req_elevated">Elevated</string>
-    <string name="guide_req_assist_or_elevated">Assist or Elevated</string>
+    <string name="guide_req_assist_or_elevated">Accessibility service</string>
 
     <string name="guide_fix_grant">Grant</string>
     <string name="guide_fix_allow">Allow</string>

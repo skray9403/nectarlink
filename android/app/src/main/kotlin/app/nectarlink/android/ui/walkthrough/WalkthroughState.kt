@@ -8,8 +8,7 @@ enum class WalkthroughStep(val index: Int, val title: String) {
     Welcome(0, "Welcome"),
     Permissions(1, "Permissions"),
     Pair(2, "Pair with your PC"),
-    PowerLevel(3, "Choose your power level"),
-    Done(4, "Setup complete"),
+    Done(3, "Setup complete"),
     ;
 
     val next: WalkthroughStep?

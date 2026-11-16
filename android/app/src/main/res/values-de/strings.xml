@@ -937,7 +937,7 @@
     <string name="guide_req_dnd">Zugriff auf „Bitte nicht stören“</string>
     <string name="guide_req_write_settings">Systemeinstellungen ändern</string>
     <string name="guide_req_elevated">Erweitert</string>
-    <string name="guide_req_assist_or_elevated">Assistenz oder Erweitert</string>
+    <string name="guide_req_assist_or_elevated">Bedienungshilfedienst</string>
 
     <string name="guide_fix_grant">Erteilen</string>
     <string name="guide_fix_allow">Erlauben</string>

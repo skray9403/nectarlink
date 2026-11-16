@@ -312,7 +312,6 @@ fun HomeScreen(
                     var missingCount = 0
                     if (!state.backgroundUnrestricted) missingCount++
                     if (!state.notificationAccess) missingCount++
-                    if (!state.elevated) missingCount++
                     if (!state.inputAccess && !state.elevated) missingCount++
                     if (!state.smsAccess) missingCount++
                     if (!state.callAccess) missingCount++
@@ -717,7 +716,6 @@ fun HomeScreen(
             var missingCount = 0
             if (!state.backgroundUnrestricted) missingCount++
             if (!state.notificationAccess) missingCount++
-            if (!state.elevated) missingCount++
             if (!state.inputAccess && !state.elevated) missingCount++
             if (!state.smsAccess) missingCount++
             if (!state.callAccess) missingCount++
@@ -1012,19 +1010,6 @@ private fun openAppDetailsSettings(context: android.content.Context) {
     }
 }
 
-private fun openDeveloperOptions(context: android.content.Context) {
-    val devIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    if (runCatching { context.startActivity(devIntent) }.isFailure) {
-        runCatching {
-            context.startActivity(
-                Intent(android.provider.Settings.ACTION_SETTINGS)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LiveStreamingBanner(
@@ -1202,21 +1187,6 @@ private fun PermissionsSetupCard(
                         stringResource(R.string.notifications_off),
                     ) {
                         runCatching { context.startActivity(NotificationListener.settingsIntent(context)) }
-                    }
-                }
-                if (!state.elevated) {
-                    SetupCard(
-                        title = stringResource(R.string.home_background_clipboard_title),
-                        text = stringResource(R.string.home_background_clipboard_body),
-                        secondaryLabel = stringResource(R.string.elevated_open_developer),
-                        onSecondary = { openDeveloperOptions(context) },
-                    ) {
-                        scope.launch {
-                            app.nectarlink.android.elevated.PairingNotification.show(context)
-                            if (!app.nectarlink.android.elevated.Elevated.start()) {
-                                openDeveloperOptions(context)
-                            }
-                        }
                     }
                 }
                 if (!state.inputAccess && !state.elevated) {

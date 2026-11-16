@@ -15,6 +15,13 @@ import org.w3c.dom.Element
 class ThemeAndLocalizationTest {
 
     @Test
+    fun `fresh installs use the documented Bloom theme and Honey seed`() {
+        val appearance = Appearance()
+        assertEquals("bloom", appearance.theme)
+        assertEquals(Tokens.DEFAULT_SEED, appearance.seed)
+    }
+
+    @Test
     fun `sanitizeAppearance accepts valid themes, modes, and seeds and falls back on unknown or null values`() {
         val themes = listOf("hive", "bloom", "graphite", "glass")
         val modes = listOf("system", "light", "dark")

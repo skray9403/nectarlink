@@ -945,7 +945,7 @@
     <string name="guide_req_dnd">Acceso a No molestar</string>
     <string name="guide_req_write_settings">Modificar la configuración del sistema</string>
     <string name="guide_req_elevated">Elevated</string>
-    <string name="guide_req_assist_or_elevated">Assist o Elevated</string>
+    <string name="guide_req_assist_or_elevated">Servicio de accesibilidad</string>
 
     <string name="guide_fix_grant">Conceder</string>
     <string name="guide_fix_allow">Permitir</string>

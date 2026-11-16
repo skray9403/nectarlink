@@ -19,15 +19,14 @@ class WalkthroughStateTest {
     @Test
     fun walkthroughStepsFollowExpectedOrderAndStorageKeys() {
         val steps = WalkthroughStep.entries
-        assertEquals(5, steps.size)
+        assertEquals(4, steps.size)
         assertEquals(WalkthroughStep.Welcome, steps.first())
         assertEquals(WalkthroughStep.Done, steps.last())
 
         assertNull(WalkthroughStep.Welcome.previous)
         assertEquals(WalkthroughStep.Permissions, WalkthroughStep.Welcome.next)
         assertEquals(WalkthroughStep.Pair, WalkthroughStep.Permissions.next)
-        assertEquals(WalkthroughStep.PowerLevel, WalkthroughStep.Pair.next)
-        assertEquals(WalkthroughStep.Done, WalkthroughStep.PowerLevel.next)
+        assertEquals(WalkthroughStep.Done, WalkthroughStep.Pair.next)
         assertNull(WalkthroughStep.Done.next)
 
         for (step in steps) {
@@ -229,7 +228,6 @@ class WalkthroughStateTest {
                 "Calls",
                 "Photos",
                 "Screen mirroring",
-                "App streams",
                 "Phone as webcam",
                 "Continuity camera",
                 "Voice recorder",
@@ -239,7 +237,6 @@ class WalkthroughStateTest {
                 "Quick actions",
                 "Browse PC files",
                 "Wake PC",
-                "Elevated",
                 "Assist",
                 "Connection Doctor",
             )

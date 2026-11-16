@@ -65,7 +65,7 @@ fun rememberReducedMotion(): Boolean {
 /** The user's look choices (see Preferences). */
 @androidx.compose.runtime.Immutable
 data class Appearance(
-    val theme: String = "graphite",
+    val theme: String = "bloom",
     val mode: String = "system",
     val seed: String = Tokens.DEFAULT_SEED,
     /** Bloom/Glass takes its colors from the wallpaper (Android 12+). */
@@ -348,6 +348,7 @@ private fun shapes(graphite: Boolean, glass: Boolean, hive: Boolean) = when {
         large = RoundedCornerShape(24.dp),
         extraLarge = RoundedCornerShape(30.dp),
     )
+    // Bloom follows docs/design/tokens.json so Android and Desktop share one shape scale.
     else -> Shapes(
         extraSmall = RoundedCornerShape(8.dp),
         small = RoundedCornerShape(12.dp),

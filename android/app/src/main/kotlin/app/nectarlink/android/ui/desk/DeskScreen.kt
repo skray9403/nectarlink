@@ -129,6 +129,7 @@ fun DeskScreen(
     var draggingVolume by remember { mutableStateOf<Float?>(null) }
     var lastSentVolInt by remember { mutableIntStateOf(-1) }
     val scope = rememberCoroutineScope()
+    val scheme = MaterialTheme.colorScheme
 
     Surface(
         color = Color.Black,
@@ -150,10 +151,14 @@ fun DeskScreen(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = if (device.online) Color(0xFF0E2217) else Color(0xFF16181E),
+                    color = if (device.online) {
+                        scheme.primaryContainer.copy(alpha = 0.18f)
+                    } else {
+                        Color(0xFF16181E)
+                    },
                     border = BorderStroke(
                         1.dp,
-                        if (device.online) Color(0xFF2EA05E) else Color(0xFF2B2F3A),
+                        if (device.online) scheme.primary.copy(alpha = 0.52f) else scheme.outlineVariant,
                     ),
                 ) {
                     Row(
@@ -161,7 +166,7 @@ fun DeskScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        val dotColor = if (device.online) Color(0xFF4ADE80) else Color(0xFF9CA3AF)
+                        val dotColor = if (device.online) scheme.primary else scheme.outline
                         Spacer(
                             modifier = Modifier
                                 .size(8.dp)
@@ -174,7 +179,7 @@ fun DeskScreen(
                         Text(
                             text = linkDetail,
                             style = MaterialTheme.typography.labelLarge,
-                            color = if (device.online) Color(0xFFB8F5CD) else Color(0xFFD1D5DB),
+                            color = if (device.online) scheme.primary else scheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -183,9 +188,9 @@ fun DeskScreen(
 
                 OutlinedButton(
                     onClick = onBack,
-                    border = BorderStroke(1.dp, Color(0xFF282C37)),
+                    border = BorderStroke(1.dp, scheme.outlineVariant),
                 ) {
-                    Text(stringResource(R.string.desk_exit), color = Color(0xFFD1D5DB))
+                    Text(stringResource(R.string.desk_exit), color = scheme.onSurfaceVariant)
                 }
             }
 

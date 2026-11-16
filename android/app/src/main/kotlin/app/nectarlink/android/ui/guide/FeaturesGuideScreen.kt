@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.nectarlink.android.ui.guide
 
-import android.content.Context
-import android.content.Intent
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,7 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,8 +54,6 @@ import app.nectarlink.android.calls.PhoneCalls
 import app.nectarlink.android.contacts.PhoneContacts
 import app.nectarlink.android.core.BackgroundAccess
 import app.nectarlink.android.core.CoreState
-import app.nectarlink.android.elevated.Elevated
-import app.nectarlink.android.elevated.PairingNotification
 import app.nectarlink.android.mirror.InputService
 import app.nectarlink.android.notifications.NotificationListener
 import app.nectarlink.android.photos.RecentPhotos
@@ -71,7 +65,6 @@ import app.nectarlink.android.ui.theme.bentoWell
 import app.nectarlink.android.ui.theme.glassModalBlur
 import app.nectarlink.android.ui.theme.glassModalContainerColor
 import app.nectarlink.android.ui.theme.liquidGlassCard
-import kotlinx.coroutines.launch
 
 /**
  * Interactive Features Guide screen with search, area filters, live capability badges,
@@ -104,7 +97,6 @@ fun FeaturesGuideScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val isGlass = LocalGlassTheme.current
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var selectedAreaId by rememberSaveable { mutableStateOf(FeatureArea.All.id) }
@@ -122,16 +114,12 @@ fun FeaturesGuideScreen(
         val res = context.resources
         filteredEntries.map { entry ->
             val badge = entry.evaluateBadge(state)
-            val showBadge = hasConnectedPc ||
-                badge is FeatureLiveBadge.NeedsPermission ||
-                badge is FeatureLiveBadge.NeedsPowerLevel
+            val showBadge = hasConnectedPc || badge is FeatureLiveBadge.NeedsPermission
             val badgeText = if (showBadge) {
                 when (badge) {
                     is FeatureLiveBadge.Available -> res.getString(badge.labelRes)
                     is FeatureLiveBadge.NeedsPermission ->
                         res.getString(badge.labelRes, res.getString(badge.permissionNameRes))
-                    is FeatureLiveBadge.NeedsPowerLevel ->
-                        res.getString(badge.labelRes, res.getString(badge.levelNameRes))
                     is FeatureLiveBadge.ConnectPcToCheck -> res.getString(badge.labelRes)
                 }
             } else {
@@ -169,7 +157,7 @@ fun FeaturesGuideScreen(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { onAccessChanged() }
 
-    val runFixAction: (GuideFixAction) -> Unit = remember(context, scope, onAccessChanged, onPairNew) {
+    val runFixAction: (GuideFixAction) -> Unit = remember(context, onAccessChanged, onPairNew) {
         { action ->
             when (action) {
                 GuideFixAction.GRANT_NOTIFICATIONS -> {
@@ -192,15 +180,6 @@ fun FeaturesGuideScreen(
                 }
                 GuideFixAction.OPEN_ACCESSIBILITY -> {
                     runCatching { context.startActivity(InputService.settingsIntent()) }
-                }
-                GuideFixAction.ENABLE_ELEVATED -> {
-                    scope.launch {
-                        PairingNotification.show(context)
-                        if (!Elevated.start()) {
-                            openDevOptions(context)
-                        }
-                        onAccessChanged()
-                    }
                 }
                 GuideFixAction.ENABLE_DND -> {
                     runCatching { context.startActivity(PhoneToggles.dndSettingsIntent()) }
@@ -576,9 +555,8 @@ private fun FeatureBadgeChip(
     val (bg, fg) = when (badge) {
         is FeatureLiveBadge.Available ->
             MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) to MaterialTheme.colorScheme.primary
-        is FeatureLiveBadge.NeedsPermission,
-        is FeatureLiveBadge.NeedsPowerLevel,
-        -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+        is FeatureLiveBadge.NeedsPermission ->
+            MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
         is FeatureLiveBadge.ConnectPcToCheck ->
             MaterialTheme.colorScheme.surfaceContainerHighest to MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -586,8 +564,6 @@ private fun FeatureBadgeChip(
         is FeatureLiveBadge.Available -> stringResource(badge.labelRes)
         is FeatureLiveBadge.NeedsPermission ->
             stringResource(badge.labelRes, stringResource(badge.permissionNameRes))
-        is FeatureLiveBadge.NeedsPowerLevel ->
-            stringResource(badge.labelRes, stringResource(badge.levelNameRes))
         is FeatureLiveBadge.ConnectPcToCheck -> stringResource(badge.labelRes)
     }
     Text(
@@ -611,9 +587,7 @@ private fun FeatureLearnMoreSheetContent(
 ) {
     val badge = entry.evaluateBadge(state)
     val fixAction = entry.evaluateFixAction(state)
-    val showBadge = hasConnectedPc ||
-        badge is FeatureLiveBadge.NeedsPermission ||
-        badge is FeatureLiveBadge.NeedsPowerLevel
+    val showBadge = hasConnectedPc || badge is FeatureLiveBadge.NeedsPermission
 
     Column(
         modifier = Modifier
@@ -721,16 +695,6 @@ private fun GuideSectionBlock(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-    }
-}
-
-private fun openDevOptions(context: Context) {
-    val devIntent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    if (runCatching { context.startActivity(devIntent) }.isFailure) {
-        runCatching {
-            context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }
 }

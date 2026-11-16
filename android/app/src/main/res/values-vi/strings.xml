@@ -896,7 +896,7 @@
 <string name="guide_req_dnd">Quyền truy cập Không làm phiền</string>
 <string name="guide_req_write_settings">Sửa đổi cài đặt hệ thống</string>
 <string name="guide_req_elevated">Nâng cao</string>
-<string name="guide_req_assist_or_elevated">Hỗ trợ hoặc Nâng cao</string>
+<string name="guide_req_assist_or_elevated">Dịch vụ Trợ năng</string>
 <string name="guide_fix_grant">Cấp</string>
 <string name="guide_fix_allow">Cho phép</string>
 <string name="guide_fix_enable">Bật</string>

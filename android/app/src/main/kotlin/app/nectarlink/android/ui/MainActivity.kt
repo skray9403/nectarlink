@@ -1177,12 +1177,10 @@ private fun FloatingDockTabPill(
                     }
                 }
             }
-            .clickable(
-                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                indication = null,
-                onClick = onClick,
-            )
-            .padding(horizontal = 18.dp, vertical = 9.dp),
+            // Retain Material's pressed-state feedback and a 48 dp minimum
+            // interaction height for comfortable one-handed navigation.
+            .clickable(role = Role.Tab, onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 14.dp),
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
