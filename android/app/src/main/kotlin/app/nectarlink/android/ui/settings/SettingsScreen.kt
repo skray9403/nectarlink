@@ -611,7 +611,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_control),
                     highlighted = pulsingSectionKey == "control",
                 ) {
-                    ControlAccess(state.inputAccess)
+                    ControlAccess(state.inputAccess || state.elevated)
                     SettingRowDivider()
                     BankingPauseAccess()
                     SettingRowDivider()
