@@ -62,7 +62,7 @@ class CompanionAndMigrationTest {
             seed = "cyberpunk",
             dynamicColor = false,
         )
-        assertEquals("graphite", legacy.theme)
+        assertEquals("bloom", legacy.theme)
         assertEquals("system", legacy.mode)
         assertEquals(Tokens.DEFAULT_SEED, legacy.seed)
         assertFalse(legacy.dynamicColor)
@@ -70,7 +70,7 @@ class CompanionAndMigrationTest {
         val empty = Preferences.sanitizeAppearance(
             Appearance(theme = "", mode = "", seed = "", dynamicColor = true),
         )
-        assertEquals("graphite", empty.theme)
+        assertEquals("bloom", empty.theme)
         assertEquals("system", empty.mode)
         assertEquals(Tokens.DEFAULT_SEED, empty.seed)
         assertTrue(empty.dynamicColor)
