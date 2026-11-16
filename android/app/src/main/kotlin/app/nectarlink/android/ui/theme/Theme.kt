@@ -65,7 +65,7 @@ fun rememberReducedMotion(): Boolean {
 /** The user's look choices (see Preferences). */
 @androidx.compose.runtime.Immutable
 data class Appearance(
-    val theme: String = "graphite",
+    val theme: String = "bloom",
     val mode: String = "system",
     val seed: String = Tokens.DEFAULT_SEED,
     /** Bloom/Glass takes its colors from the wallpaper (Android 12+). */
