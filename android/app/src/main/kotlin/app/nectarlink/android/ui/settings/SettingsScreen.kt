@@ -1485,7 +1485,7 @@ private fun Section(
             modifier = Modifier
                 .fillMaxWidth()
                 .liquidGlassCard(
-                    cornerRadius = if (isGlass) 24.dp else 16.dp,
+                    cornerRadius = if (isGlass) 26.dp else 20.dp,
                     isGlass = isGlass,
                     baseColor = if (highlighted) scheme.secondaryContainer else scheme.surfaceContainer,
                     tintColor = scheme.primary,
@@ -1495,7 +1495,7 @@ private fun Section(
                         else -> androidx.compose.ui.graphics.Color.Transparent
                     },
                 )
-                .padding(16.dp),
+                .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             content()
