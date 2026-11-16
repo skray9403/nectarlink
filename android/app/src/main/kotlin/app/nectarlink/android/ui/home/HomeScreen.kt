@@ -1432,6 +1432,33 @@ private fun PcCard(
             val outline = BorderStroke(1.dp, ink.copy(alpha = if (device.online) 0.45f else 0.15f))
             val statusDotColor = if (device.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(device.name, style = MaterialTheme.typography.headlineLarge)
+                    device.model?.let {
+                        Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 2.dp))
+                    }
+                }
+                device.battery?.let { battery ->
+                    Text(
+                        text = if (battery.charging) stringResource(R.string.battery_charging, battery.level.toInt())
+                        else stringResource(R.string.battery_level, battery.level.toInt()),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = ink,
+                        modifier = Modifier
+                            .bentoWell(
+                                cornerRadius = 14.dp,
+                                fillColor = ink.copy(alpha = 0.10f),
+                            )
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
             // The status keeps room to be read: with large fonts the buttons move
             // to a line of their own rather than squeeze it a letter at a time.
             FlowRow(
@@ -1440,29 +1467,36 @@ private fun PcCard(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .weight(1f)
-                        .widthIn(min = 132.dp),
+                Surface(
+                    modifier = Modifier.weight(1f).widthIn(min = 132.dp),
+                    shape = MaterialTheme.shapes.full,
+                    color = ink.copy(alpha = if (device.online) 0.10f else 0.07f),
+                    contentColor = ink,
                 ) {
-                    Spacer(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .padding(1.dp)
-                            .drawBehind { drawCircle(statusDotColor) },
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        if (!device.online && device.wakeState == WakeState.Waking) {
-                            stringResource(R.string.wake_waking, device.name)
-                        } else if (!device.online && !device.reconnect) {
-                            stringResource(R.string.link_not_reconnecting)
-                        } else {
-                            linkText(device.link)
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Spacer(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .padding(1.dp)
+                                .drawBehind { drawCircle(statusDotColor) },
+                        )
+                        Text(
+                            if (!device.online && device.wakeState == WakeState.Waking) {
+                                stringResource(R.string.wake_waking, device.name)
+                            } else if (!device.online && !device.reconnect) {
+                                stringResource(R.string.link_not_reconnecting)
+                            } else {
+                                linkText(device.link)
+                            },
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 if (!device.online && !device.reconnect) {
                     FilledTonalButton(
@@ -1507,33 +1541,6 @@ private fun PcCard(
                             maxLines = 1,
                         )
                     }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(device.name, style = MaterialTheme.typography.headlineLarge)
-                    device.model?.let {
-                        Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 2.dp))
-                    }
-                }
-                device.battery?.let { battery ->
-                    Text(
-                        text = if (battery.charging) stringResource(R.string.battery_charging, battery.level.toInt())
-                        else stringResource(R.string.battery_level, battery.level.toInt()),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = ink,
-                        modifier = Modifier
-                            .bentoWell(
-                                cornerRadius = 14.dp,
-                                fillColor = ink.copy(alpha = 0.10f),
-                            )
-                            .padding(horizontal = 10.dp, vertical = 5.dp),
-                    )
                 }
             }
             Spacer(Modifier.height(16.dp))
