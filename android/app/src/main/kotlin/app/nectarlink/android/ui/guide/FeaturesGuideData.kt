@@ -684,7 +684,7 @@ object FeaturesGuideCatalog {
             area = FeatureArea.MirroringCamera,
             titleRes = R.string.guide_apps_title,
             summaryRes = R.string.guide_apps_summary,
-            keywords = listOf("app streams", "app window", "virtual display", "elevated", "wireless debugging", "shizuku", "apps"),
+            keywords = listOf("app streams", "app window", "virtual display", "apps"),
             whereTextRes = R.string.guide_apps_where,
             showMeTarget = GuideHighlightTarget.SETTINGS_CONTROL,
             needsSummaryRes = R.string.guide_apps_needs,
@@ -712,9 +712,7 @@ object FeaturesGuideCatalog {
                     FeatureLiveBadge.Available
                 }
             },
-            evaluateFixAction = { state ->
-                if (!state.elevated) GuideFixAction.ENABLE_ELEVATED else null
-            },
+            evaluateFixAction = { null },
         ),
 
         // 17. Phone as webcam
