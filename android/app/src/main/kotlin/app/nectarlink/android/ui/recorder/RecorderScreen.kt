@@ -71,6 +71,7 @@ import app.nectarlink.android.core.CoreState
 import app.nectarlink.android.core.Device
 import app.nectarlink.android.recorder.DeliveryState
 import app.nectarlink.android.recorder.RecorderService
+import app.nectarlink.android.ui.components.DeviceScreenHeader
 import app.nectarlink.android.recorder.SavedRecording
 import app.nectarlink.android.ui.theme.LocalAppFonts
 import app.nectarlink.android.ui.theme.LocalReducedMotion
@@ -160,31 +161,12 @@ fun RecorderScreen(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Header: Back, PC name, online dot
         item(key = "header", contentType = "header") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_back),
-                        contentDescription = stringResource(R.string.action_back),
-                    )
-                }
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    device.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                val dotColor = if (device.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                Spacer(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .drawBehind { drawCircle(dotColor) },
-                )
-            }
+            DeviceScreenHeader(
+                deviceName = device.name,
+                online = device.online,
+                onBack = onBack,
+            )
         }
 
         // Contextual permission card when microphone access has not been granted yet
