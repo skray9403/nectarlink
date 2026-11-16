@@ -100,10 +100,10 @@ fun PairingScreen(
     }
 
     Column(
-        Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 24.dp, vertical = 16.dp),
+        Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(12.dp))
         Text(
             text = when (pairing) {
                 is PairingState.Comparing, is PairingState.Confirmed -> stringResource(R.string.pair_check_code)
@@ -115,12 +115,21 @@ fun PairingScreen(
                     else -> stringResource(R.string.pair_title)
                 }
             },
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineLarge,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(18.dp))
 
-        AnimatedContent(
+        Surface(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                AnimatedContent(
             targetState = Triple(pairing, nearby, showing),
             transitionSpec = {
                 if (reducedMotion) {
@@ -129,10 +138,10 @@ fun PairingScreen(
                     fadeIn() togetherWith fadeOut()
                 }
             },
-            modifier = Modifier.weight(1f),
-            label = "pairing",
-        ) { (current, showNearby, showCode) ->
-            when (current) {
+                    modifier = Modifier.fillMaxSize(),
+                    label = "pairing",
+                ) { (current, showNearby, showCode) ->
+                    when (current) {
                 PairingState.Idle -> when {
                     showCode -> ShowCode(actions)
                     showNearby -> NearbyList(state.discovered, actions::pairNearby)
@@ -152,6 +161,7 @@ fun PairingScreen(
                     Outcome(false, failureText(current.failure))
                     Spacer(Modifier.height(16.dp))
                     Button(onClick = actions::reset) { Text(stringResource(R.string.action_try_again)) }
+                    }
                 }
             }
         }
