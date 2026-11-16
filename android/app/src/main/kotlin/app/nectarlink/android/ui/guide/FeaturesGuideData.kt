@@ -80,12 +80,6 @@ sealed interface FeatureLiveBadge {
         override val labelRes: Int = R.string.guide_badge_needs_permission
     }
 
-    data class NeedsPowerLevel(
-        @StringRes val levelNameRes: Int,
-    ) : FeatureLiveBadge {
-        override val labelRes: Int = R.string.guide_badge_needs_power
-    }
-
     data object ConnectPcToCheck : FeatureLiveBadge {
         override val labelRes: Int = R.string.guide_badge_connect_pc
     }
@@ -678,43 +672,6 @@ object FeaturesGuideCatalog {
             evaluateFixAction = { null },
         ),
 
-        // 16. App streams
-        FeatureGuideEntry(
-            id = "phone_app_windows",
-            area = FeatureArea.MirroringCamera,
-            titleRes = R.string.guide_apps_title,
-            summaryRes = R.string.guide_apps_summary,
-            keywords = listOf("app streams", "app window", "virtual display", "apps"),
-            whereTextRes = R.string.guide_apps_where,
-            showMeTarget = GuideHighlightTarget.SETTINGS_CONTROL,
-            needsSummaryRes = R.string.guide_apps_needs,
-            whatYouNeedResIds = listOf(
-                R.string.guide_apps_need_1,
-                R.string.guide_apps_need_2,
-            ),
-            stepByStepPhoneResIds = listOf(
-                R.string.guide_apps_phone_1,
-            ),
-            stepByStepPcResIds = listOf(
-                R.string.guide_apps_pc_1,
-            ),
-            optionsExplainedResIds = listOf(
-                R.string.guide_apps_opt_1,
-            ),
-            dataAndPrivacyRes = R.string.guide_apps_privacy,
-            limitsRes = R.string.guide_apps_limits,
-            evaluateBadge = { state ->
-                if (!state.elevated) {
-                    FeatureLiveBadge.NeedsPowerLevel(R.string.guide_req_elevated)
-                } else if (state.devices.none { it.online }) {
-                    FeatureLiveBadge.ConnectPcToCheck
-                } else {
-                    FeatureLiveBadge.Available
-                }
-            },
-            evaluateFixAction = { null },
-        ),
-
         // 17. Phone as webcam
         FeatureGuideEntry(
             id = "phone_as_pc_webcam",
@@ -879,7 +836,7 @@ object FeaturesGuideCatalog {
             limitsRes = R.string.guide_assist_limits,
             evaluateBadge = { state ->
                 if (!state.inputAccess && !state.elevated) {
-                    FeatureLiveBadge.NeedsPowerLevel(R.string.guide_req_assist_or_elevated)
+                    FeatureLiveBadge.NeedsPermission(R.string.guide_req_assist_or_elevated)
                 } else if (state.devices.none { it.online }) {
                     FeatureLiveBadge.ConnectPcToCheck
                 } else {
