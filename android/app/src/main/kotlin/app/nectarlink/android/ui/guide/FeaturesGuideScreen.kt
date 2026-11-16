@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.nectarlink.android.ui.guide
 
-import android.content.Context
-import android.content.Intent
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -58,8 +55,6 @@ import app.nectarlink.android.calls.PhoneCalls
 import app.nectarlink.android.contacts.PhoneContacts
 import app.nectarlink.android.core.BackgroundAccess
 import app.nectarlink.android.core.CoreState
-import app.nectarlink.android.elevated.Elevated
-import app.nectarlink.android.elevated.PairingNotification
 import app.nectarlink.android.mirror.InputService
 import app.nectarlink.android.notifications.NotificationListener
 import app.nectarlink.android.photos.RecentPhotos
@@ -192,15 +187,6 @@ fun FeaturesGuideScreen(
                 }
                 GuideFixAction.OPEN_ACCESSIBILITY -> {
                     runCatching { context.startActivity(InputService.settingsIntent()) }
-                }
-                GuideFixAction.ENABLE_ELEVATED -> {
-                    scope.launch {
-                        PairingNotification.show(context)
-                        if (!Elevated.start()) {
-                            openDevOptions(context)
-                        }
-                        onAccessChanged()
-                    }
                 }
                 GuideFixAction.ENABLE_DND -> {
                     runCatching { context.startActivity(PhoneToggles.dndSettingsIntent()) }
@@ -721,16 +707,6 @@ private fun GuideSectionBlock(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-    }
-}
-
-private fun openDevOptions(context: Context) {
-    val devIntent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    if (runCatching { context.startActivity(devIntent) }.isFailure) {
-        runCatching {
-            context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }
 }
