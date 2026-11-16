@@ -1469,7 +1469,7 @@ private fun PcCard(
             ) {
                 Surface(
                     modifier = Modifier.weight(1f).widthIn(min = 132.dp),
-                    shape = MaterialTheme.shapes.full,
+                    shape = CircleShape,
                     color = ink.copy(alpha = if (device.online) 0.10f else 0.07f),
                     contentColor = ink,
                 ) {
