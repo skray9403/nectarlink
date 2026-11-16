@@ -869,7 +869,7 @@
     <string name="guide_req_dnd">Доступ к «Не беспокоить»</string>
     <string name="guide_req_write_settings">Изменение системных настроек</string>
     <string name="guide_req_elevated">Elevated</string>
-    <string name="guide_req_assist_or_elevated">Assist или Elevated</string>
+    <string name="guide_req_assist_or_elevated">Служба специальных возможностей</string>
     <string name="guide_fix_grant">Дать</string>
     <string name="guide_fix_allow">Разрешить</string>
     <string name="guide_fix_enable">Включить</string>
