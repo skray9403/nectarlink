@@ -2,11 +2,8 @@
 package app.nectarlink.android.ui.walkthrough
 
 import android.Manifest
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -60,7 +57,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -97,8 +93,6 @@ import app.nectarlink.android.contacts.PhoneContacts
 import app.nectarlink.android.core.BackgroundAccess
 import app.nectarlink.android.core.CoreState
 import app.nectarlink.android.core.PairingState
-import app.nectarlink.android.elevated.Elevated
-import app.nectarlink.android.elevated.PairingNotification
 import app.nectarlink.android.mirror.InputService
 import app.nectarlink.android.notifications.NotificationListener
 import app.nectarlink.android.photos.RecentPhotos
@@ -117,12 +111,11 @@ import kotlin.math.sin
 import kotlinx.coroutines.launch
 
 /**
- * First-run setup walkthrough screen with 5 steps:
+ * First-run setup walkthrough screen with 4 focused steps:
  * 1. Welcome
  * 2. Permissions
  * 3. Pair with your PC
- * 4. Choose your power level (Standard, Assist, Elevated)
- * 5. Setup complete
+ * 4. Setup complete
  */
 @Composable
 fun WalkthroughScreen(
@@ -194,12 +187,6 @@ fun WalkthroughScreen(
     }
 
     val hasPairedPc = state.devices.isNotEmpty() || state.pairing is PairingState.Paired
-    val activeTierIndex = when {
-        state.elevated -> 2
-        state.inputAccess -> 1
-        else -> 0
-    }
-
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
@@ -221,7 +208,6 @@ fun WalkthroughScreen(
                 step = step,
                 permissionGrantedFlags = permissionGrantedFlags,
                 hasPairedPc = hasPairedPc,
-                activeTierIndex = activeTierIndex,
                 isGlass = isGlass,
                 reducedMotion = reducedMotion,
                 modifier = Modifier
@@ -270,12 +256,7 @@ fun WalkthroughScreen(
                         state = state,
                         actions = pairingActions,
                         isGlass = isGlass,
-                        onContinue = { onStepChange(WalkthroughStep.PowerLevel) },
-                    )
-                    WalkthroughStep.PowerLevel -> PowerLevelStepContent(
-                        state = state,
-                        isGlass = isGlass,
-                        onAccessChanged = notifyAccessAndPostNotifChanged,
+                        onContinue = { onStepChange(WalkthroughStep.Done) },
                     )
                     WalkthroughStep.Done -> DoneStepContent(
                         state = state,
@@ -442,7 +423,6 @@ private fun HoneycombCellStage(
     step: WalkthroughStep,
     permissionGrantedFlags: List<Boolean>,
     hasPairedPc: Boolean,
-    activeTierIndex: Int,
     isGlass: Boolean,
     reducedMotion: Boolean,
     modifier: Modifier = Modifier,
@@ -484,23 +464,17 @@ private fun HoneycombCellStage(
             val strokePx = 2.dp.toPx()
             val accentStrokePx = 1.5.dp.toPx()
 
-            // Left section (36% width): 5-cell honeycomb cluster representing Steps 0..4
+            // Left section (36% width): four-cell cluster representing the four setup steps
             val clusterCx = w * 0.22f
             val clusterCy = h * 0.5f
             val cellR = 13.dp.toPx()
             val dx = cellR * 1.62f
             val dy = cellR * 1.42f
 
-            // 5-cell honeycomb offsets (top row 3 cells, bottom row 2 interlocking cells)
-            for (i in 0 until 5) {
-                val cx = when (i) {
-                    0 -> clusterCx - dx
-                    1 -> clusterCx
-                    2 -> clusterCx + dx
-                    3 -> clusterCx - dx * 0.5f
-                    else -> clusterCx + dx * 0.5f
-                }
-                val cy = if (i < 3) clusterCy - dy * 0.5f else clusterCy + dy * 0.5f
+            // Four linked cells keep the progress motif balanced across the shorter flow.
+            for (i in 0 until 4) {
+                val cx = clusterCx + if (i % 2 == 0) -dx * 0.55f else dx * 0.55f
+                val cy = if (i < 2) clusterCy - dy * 0.45f else clusterCy + dy * 0.45f
 
                 val completed = i < step.index
                 val isCurrent = i == step.index
@@ -690,50 +664,6 @@ private fun HoneycombCellStage(
                             color = primary,
                             strokeWidth = strokePx,
                         )
-                    }
-                }
-
-                WalkthroughStep.PowerLevel -> {
-                    val tierR = 18.dp.toPx()
-                    val stepX = 36.dp.toPx()
-                    for (tier in 0..2) {
-                        val tx = motifCx + (tier - 1) * stepX
-                        val ty = motifCy + (1 - tier) * 7.dp.toPx()
-                        val isSelected = tier == activeTierIndex
-                        val isUnlocked = tier <= activeTierIndex
-
-                        drawHexCell(
-                            path = hexPath,
-                            center = Offset(tx, ty),
-                            radius = tierR,
-                            fillColor = if (isUnlocked) primaryContainer else surfaceHigh,
-                            strokeColor = if (isUnlocked) primary else outlineVariant,
-                            strokeWidth = strokePx,
-                        )
-                        if (isSelected) {
-                            drawHexRing(
-                                path = hexPath,
-                                center = Offset(tx, ty),
-                                radius = tierR + 3.5.dp.toPx(),
-                                strokeColor = primary.copy(alpha = 0.6f),
-                                strokeWidth = accentStrokePx,
-                            )
-                        }
-                        // Draw 1, 2, or 3 level bars inside the hex
-                        val barCount = tier + 1
-                        val barSpacing = 4.5.dp.toPx()
-                        val barHalfW = 5.dp.toPx()
-                        val startY = ty + ((barCount - 1) * barSpacing) * 0.5f
-                        for (b in 0 until barCount) {
-                            val by = startY - b * barSpacing
-                            drawLine(
-                                color = if (isUnlocked) primary else outlineVariant,
-                                start = Offset(tx - barHalfW, by),
-                                end = Offset(tx + barHalfW, by),
-                                strokeWidth = strokePx,
-                                cap = StrokeCap.Round,
-                            )
-                        }
                     }
                 }
 
@@ -1695,255 +1625,6 @@ private fun PairingStatusCard(
 }
 
 @Composable
-private fun PowerLevelStepContent(
-    state: CoreState,
-    isGlass: Boolean,
-    onAccessChanged: () -> Unit,
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var showElevatedGuide by rememberSaveable { mutableStateOf(false) }
-
-    val activeTierLabel = stringResource(
-        when {
-            state.elevated -> R.string.walkthrough_power_elevated_title
-            state.inputAccess -> R.string.walkthrough_power_assist_title
-            else -> R.string.walkthrough_power_standard_title
-        },
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.walkthrough_power_title),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.weight(1f).padding(end = 12.dp),
-            )
-            StatusPillBadge(
-                label = stringResource(R.string.walkthrough_power_current_badge, activeTierLabel),
-                active = true,
-            )
-        }
-        Text(
-            text = stringResource(R.string.walkthrough_power_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .liquidGlassCard(
-                    cornerRadius = 24.dp,
-                    isGlass = isGlass,
-                    baseColor = MaterialTheme.colorScheme.surfaceContainer,
-                    tintColor = MaterialTheme.colorScheme.primary,
-                    outlineColor = if (isGlass) MaterialTheme.colorScheme.outlineVariant else Color.Transparent,
-                )
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // Tier 1: Standard
-            PowerLevelRow(
-                title = stringResource(R.string.walkthrough_power_standard_title),
-                subtitle = stringResource(R.string.walkthrough_power_standard_sub),
-                active = !state.elevated && !state.inputAccess,
-                summary = stringResource(R.string.walkthrough_power_standard_desc),
-                actionLabel = null,
-                onAction = null,
-            )
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-
-            // Tier 2: Assist
-            PowerLevelRow(
-                title = stringResource(R.string.walkthrough_power_assist_title),
-                subtitle = stringResource(R.string.walkthrough_power_assist_sub),
-                active = !state.elevated && state.inputAccess,
-                summary = stringResource(R.string.walkthrough_power_assist_desc),
-                actionLabel = stringResource(
-                    if (state.inputAccess) R.string.walkthrough_power_assist_manage else R.string.walkthrough_power_assist_open,
-                ),
-                onAction = {
-                    runCatching { context.startActivity(InputService.settingsIntent()) }
-                },
-            )
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-
-            // Tier 3: Elevated
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.walkthrough_power_elevated_title),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            text = stringResource(R.string.walkthrough_power_elevated_sub),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    StatusPillBadge(
-                        label = stringResource(
-                            if (state.elevated) R.string.walkthrough_power_badge_active else R.string.walkthrough_power_badge_optional,
-                        ),
-                        active = state.elevated,
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.walkthrough_power_elevated_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilledTonalButton(
-                        onClick = {
-                            scope.launch {
-                                PairingNotification.show(context)
-                                if (!Elevated.start()) {
-                                    openDeveloperOptionsFromWalkthrough(context)
-                                }
-                                onAccessChanged()
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(
-                            stringResource(
-                                if (state.elevated) R.string.walkthrough_power_elevated_reconnect else R.string.walkthrough_power_elevated_enable,
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    OutlinedButton(
-                        onClick = { showElevatedGuide = !showElevatedGuide },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(
-                            stringResource(
-                                if (showElevatedGuide) R.string.walkthrough_power_elevated_hide_steps else R.string.walkthrough_power_elevated_show_steps,
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-
-                AnimatedVisibility(
-                    visible = showElevatedGuide,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut(),
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp)
-                            .bentoWell(
-                                cornerRadius = 16.dp,
-                                fillColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            )
-                            .padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.walkthrough_power_elevated_steps_heading),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                        Text(
-                            text = stringResource(R.string.walkthrough_power_elevated_step1),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = stringResource(R.string.walkthrough_power_elevated_step2),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = stringResource(R.string.walkthrough_power_elevated_step3),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PowerLevelRow(
-    title: String,
-    subtitle: String,
-    active: Boolean,
-    summary: String,
-    actionLabel: String?,
-    onAction: (() -> Unit)?,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            StatusPillBadge(
-                label = stringResource(
-                    if (active) R.string.walkthrough_power_badge_active else R.string.walkthrough_power_badge_available,
-                ),
-                active = active,
-            )
-        }
-        Text(
-            text = summary,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (actionLabel != null && onAction != null) {
-            // Same width and style as the Elevated row's first button, so the actions line up.
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                FilledTonalButton(onClick = onAction, modifier = Modifier.weight(1f)) {
-                    Text(actionLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                Spacer(Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-@Composable
 private fun DoneStepContent(
     state: CoreState,
     postNotifGranted: Boolean,
@@ -1955,13 +1636,6 @@ private fun DoneStepContent(
     } else {
         noPcText
     }
-    val powerLevelText = stringResource(
-        when {
-            state.elevated -> R.string.walkthrough_done_power_elevated
-            state.inputAccess -> R.string.walkthrough_done_power_assist
-            else -> R.string.walkthrough_done_power_standard
-        },
-    )
     val notifLabel = stringResource(R.string.walkthrough_perm_notif_title)
     val batteryLabel = stringResource(R.string.walkthrough_perm_battery_title)
     val callsLabel = stringResource(R.string.walkthrough_perm_calls_title)
@@ -2026,11 +1700,6 @@ private fun DoneStepContent(
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             PrivacyPointRow(
-                title = stringResource(R.string.walkthrough_done_power_label),
-                detail = powerLevelText,
-            )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-            PrivacyPointRow(
                 title = stringResource(R.string.walkthrough_done_permissions_label),
                 detail = permissionsSummary,
             )
@@ -2081,12 +1750,4 @@ internal fun StatusPillBadge(
     )
 }
 
-private fun openDeveloperOptionsFromWalkthrough(context: Context) {
-    val devIntent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    if (runCatching { context.startActivity(devIntent) }.isFailure) {
-        runCatching {
-            context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        }
-    }
-}
+
