@@ -1652,7 +1652,7 @@ private fun DoneStepContent(
         if (state.smsAccess && state.contactsAccess) add(smsLabel)
         if (state.photoAccess) add(photosLabel)
         if (state.storageAllFilesAccess || state.storageSafFolders.isNotEmpty()) add(storageLabel)
-        if (state.inputAccess) add(assistLabel)
+        if (state.inputAccess || state.elevated) add(assistLabel)
     }
     val permissionsSummary = if (grantedPermissions.isEmpty()) {
         noneGrantedText
